@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>领越LPI领导力测评工具</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.0/build/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2c3e50;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #34495e;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        h1 {
+            color: var(--secondary-color);
+            margin-bottom: 10px;
+        }
+        
+        .instructions {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .question-container {
+            margin-bottom: 25px;
+        }
+        
+        .question {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark-color);
+        }
+        
+        .rating-scale {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .option {
+            flex: 1;
+            min-width: 60px;
+            text-align: center;
+        }
+        
+        .option input {
+            display: none;
+        }
+        
+        .option label {
+            display: block;
+            padding: 8px 5px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .option input:checked + label {
+            background: var(--primary-color);
+            color: white;
+            font-weight: bold;
+        }
+        
+        .section-title {
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--primary-color);
+            color: var(--secondary-color);
+        }
+        
+        button {
+            display: block;
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1.1em;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        .results {
+            display: none;
+            margin-top: 40px;
+        }
+        
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        
+        .result-table th, .result-table td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        
+        .result-table th {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .result-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 30px;
+        }
+        
+        .qr-code {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        @media (max-width: 768px) {
+            .options {
+                flex-direction: column;
+            }
+            
+            .option {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>领越LPI领导力测评工具</h1>
+            <p>通过以下问题评估您的领导力实践行为</p>
+        </header>
+        
+        <div class="instructions">
+            <p><strong>测评说明：</strong>请根据您的实际行为，选择最适合的分数。评分标准从1到10共十个等级。(1=几乎从不,10=几乎总是)</p>
+        </div>
+        
+        <form id="lpi-form">
+            <h2 class="section-title">第一部分：领越LPI自我评测问卷</h2>
+            
+            <div id="questions-part1">
+                <!-- 第一部分问题将通过JS动态生成 -->
+            </div>
+            
+            <h2 class="section-title">第二部分：创造投入与创造力自我评测问卷</h2>
+            
+            <div class="instructions">
+                <p><strong>评分标准：</strong>1=从不, 2=非常少, 3=很少, 4=平均, 5=有时, 6=经常, 7=总是</p>
+            </div>
+            
+            <div id="questions-part2">
+                <!-- 第二部分问题将通过JS动态生成 -->
+            </div>
+            
+            <button type="button" id="submit-btn">提交测评</button>
+        </form>
+        
+        <div class="results" id="results-section">
+            <h2>测评结果</h2>
+            
+            <div class="chart-container">
+                <canvas id="result-chart"></canvas>
+            </div>
+            
+            <table class="result-table">
+                <thead>
+                    <tr>
+                        <th>领导力实践</th>
+                        <th>得分</th>
+                        <th>百分比排名</th>
+                        <th>评价</th>
+                    </tr>
+                </thead>
+                <tbody id="result-table-body">
+                    <!-- 结果将通过JS动态生成 -->
+                </tbody>
+            </table>
+            
+            <div class="qr-code">
+                <h3>分享此测评</h3>
+                <div id="qrcode"></div>
+                <p>扫描二维码分享此测评工具</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 测评数据
+        const questionsPart1 = [
+            { id: 1, text: "在要求他人之前我会以身作则", category: "以身作则" },
+            { id: 2, text: "我同大家探讨未来的发展对我们现在所做工作的影响", category: "共同愿景" },
+            { id: 3, text: "我会寻找具有挑战性的机会来检验自己的技能和才干", category: "挑战现状" },
+            { id: 4, text: "我可以和同事建建立起良好的合作关系", category: "使众人行" },
+            { id: 5, text: "我会对工作完成完成得好的所有人进行表扬", category: "激励人心" },
+            { id: 6, text: "我会花时间和精力来确保同事们按已经达成一致的原则和标准工作", category: "以身作则" },
+            { id: 7, text: "我能描绘出令人信服的、我们的未来远景", category: "共同愿景" },
+            { id: 8, text: "我要求员工在所做的工作中不断尝试创新", category: "挑战现状" },
+            { id: 9, text: "我乐于倾听各种不同人士的见解", category: "使众人行" },
+            { id: 10, text: "我让团队的同事知道他(她)对他们胜任工作的能力充满信心", category: "激励人心" },
+            { id: 11, text: "我会遵守和履行自己所做出的誓言和承诺", category: "以身作则" },
+            { id: 12, text: "我呼吁他人与我一起分享对美好未来的憧憬", category: "共同愿景" },
+            { id: 13, text: "我会打破部门或组织之间的界限,在部门或组织之外寻找创新的方法来改进工作", category: "挑战现状" },
+            { id: 14, text: "我尊重他人的尊严", category: "使众人行" },
+            { id: 15, text: "我确保以富有创意的方式对项目中做出突出贡献的员工进行奖励", category: "激励人心" },
+            { id: 16, text: "我就我的行为如何影响他人的表现征询反馈意见", category: "以身作则" },
+            { id: 17, text: "我向大家展示大家的长期利益是可以在共同的目标和愿景下实现的", category: "共同愿景" },
+            { id: 18, text: "当事情同我们预期发展不一样时,我会问\"我们能从中学习到什么?\"", category: "挑战现状" },
+            { id: 19, text: "我支持他人独立做出决定", category: "使众人行" },
+            { id: 20, text: "我会当众表彰那些为实现共同价值面奋斗的人", category: "激励人心" },
+            { id: 21, text: "我会努力让他人接受对组织运营最为有利的价值体系", category: "以身作则" },
+            { id: 22, text: "我能勾画出我们渴望实现的宏伟蓝图", category: "共同愿景" },
+            { id: 23, text: "我会对正在执行的计划和项目能够确保设定可实现的目标,制定具体的计划,并设立可衡量的标准", category: "挑战现状" },
+            { id: 24, text: "我让员工自由去决定如何进行他们的工作", category: "使众人行" },
+            { id: 25, text: "我用不同的方法来为我们取得的成果进行庆祝", category: "激励人心" },
+            { id: 26, text: "我对自己的领导理念非常清楚", category: "以身作则" },
+            { id: 27, text: "我会阐述我们所做工作的深远意义意义和目的,并对我自己所说的确信不疑", category: "共同愿景" },
+            { id: 28, text: "即使有失败的可能,我也敢于尝试和冒险", category: "挑战现状" },
+            { id: 29, text: "我确保员工能通过学习新的技能在工作中成长,并得到自身发展", category: "使众人行" },
+            { id: 30, text: "我对团队成员所做的贡献给予许多表扬和支付", category: "激励人心" }
+        ];
+
+        const questionsPart2 = [
+            { id: 31, text: "我能找到创意途径解决问题", category: "挑战现状" },
+            { id: 32, text: "我不惧怕承担风险", category: "挑战现状" },
+            { id: 33, text: "我向其他员工灌输及弘扬自己的理念", category: "挑战现状" },
+            { id: 34, text: "我是点子创意的好来源", category: "挑战现状" },
+            { id: 35, text: "我在给予机会的时候在工作中展现创造力", category: "挑战现状" },
+            { id: 36, text: "我花费相当长的时间来思考工作中遇到的问题的本质", category: "挑战现状" },
+            { id: 37, text: "我从多中角度思考工作中遇到的问题", category: "挑战现状" },
+            { id: 38, text: "我对工作中遇到的问题进行分解以获得更深刻的了解", category: "挑战现状" },
+            { id: 39, text: "我参考从不同渠道获取的各种信息", category: "挑战现状" },
+            { id: 40, text: "我从多渠道搜寻信息(如个人经历,他人经验,相关了文档,网络等)", category: "挑战现状" },
+            { id: 41, text: "我从所在的专业领域获取大量详细信息,为将来应用做准备", category: "挑战现状" },
+            { id: 42, text: "我综合考虑不同渠道的信息以提炼新的想法", category: "挑战现状" },
+            { id: 43, text: "我寻找不同领域解决方案的共通之处", category: "挑战现状" },
+            { id: 44, text: "我在确定最终的解决方案之前,会针对这个问题提出很多备选解决方案", category: "挑战现状" },
+            { id: 45, text: "我尝试提出不同于惯有思维的新型解决方案", category: "挑战现状" },
+            { id: 46, text: "我花费相当长的时间收集与吸收转换信息", category: "挑战现状" }
+        ];
+
+        // 生成问题HTML
+        function generateQuestions(questions, containerId, maxRating) {
+            const container = document.getElementById(containerId);
+            
+            questions.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'question-container';
+                
+                let questionHTML = `
+                    <div class="question">${q.id}. ${q.text}</div>
+                    <div class="options">
+                `;
+                
+                for (let i = 1; i <= maxRating; i++) {
+                    questionHTML += `
+                        <div class="option">
+                            <input type="radio" id="q${q.id}_${i}" name="q${q.id}" value="${i}">
+                            <label for="q${q.id}_${i}">${i}</label>
+                        </div>
+                    `;
+                }
+                
+                questionHTML += `
+                    </div>
+                    <div class="rating-scale">
+                        <span>${maxRating === 10 ? '几乎从不' : '从不'}</span>
+                        <span>${maxRating === 10 ? '几乎总是' : '总是'}</span>
+                    </div>
+                `;
+                
+                questionDiv.innerHTML = questionHTML;
+                container.appendChild(questionDiv);
+            });
+        }
+
+        // 初始化问题
+        document.addEventListener('DOMContentLoaded', function() {
+            generateQuestions(questionsPart1, 'questions-part1', 10);
+            generateQuestions(questionsPart2, 'questions-part2', 7);
+            
+            // 提交按钮事件
+            document.getElementById('submit-btn').addEventListener('click', calculateResults);
+            
+            // 生成二维码
+            generateQRCode();
+        });
+
+        // 计算测评结果
+        function calculateResults() {
+            // 检查是否所有问题都已回答
+            const allQuestions = [...questionsPart1, ...questionsPart2];
+            let allAnswered = true;
+            
+            for (const q of allQuestions) {
+                const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                if (!selected) {
+                    allAnswered = false;
+                    alert(`请回答问题 ${q.id}`);
+                    break;
+                }
+            }
+            
+            if (!allAnswered) return;
+            
+            // 计算每个类别的得分
+            const categories = {
+                "以身作则": { questions: [], total: 0, count: 0, average: 0 },
+                "共同愿景": { questions: [], total: 0, count: 0, average: 0 },
+                "挑战现状": { questions: [], total: 0, count: 0, average: 0 },
+                "使众人行": { questions: [], total: 0, count: 0, average: 0 },
+                "激励人心": { questions: [], total: 0, count: 0, average: 0 }
+            };
+            
+            // 收集所有问题的答案
+            allQuestions.forEach(q => {
+                const selected = document.querySelector(`input[name="q${q.id}"]:checked`);
+                const score = parseInt(selected.value);
+                
+                if (categories[q.category]) {
+                    categories[q.category].total += score;
+                    categories[q.category].count += 1;
+                    categories[q.category].questions.push({ id: q.id, score: score });
+                }
+            });
+            
+            // 计算平均值
+            for (const category in categories) {
+                if (categories[category].count > 0) {
+                    categories[category].average = (categories[category].total / categories[category].count).toFixed(2);
+                }
+            }
+            
+            // 显示结果
+            displayResults(categories);
+        }
+
+        // 显示测评结果
+        function displayResults(categories) {
+            const tableBody = document.getElementById('result-table-body');
+            tableBody.innerHTML = '';
+            
+            // 填充结果表格
+            for (const category in categories) {
+                const row = document.createElement('tr');
+                
+                // 根据得分计算百分比排名（简化计算）
+                const score = parseFloat(categories[category].average);
+                let percentile = 50; // 默认值
+                
+                if (score <= 5) {
+                    percentile = Math.round(score / 5 * 50);
+                } else {
+                    percentile = 50 + Math.round((score - 5) / 5 * 50);
+                }
+                
+                // 评价文本
+                let evaluation = "";
+                if (score >= 8) {
+                    evaluation = "优秀";
+                } else if (score >= 6) {
+                    evaluation = "良好";
+                } else if (score >= 4) {
+                    evaluation = "一般";
+                } else {
+                    evaluation = "需要改进";
+                }
+                
+                row.innerHTML = `
+                    <td>${category}</td>
+                    <td>${categories[category].average}</td>
+                    <td>${percentile}%</td>
+                    <td>${evaluation}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            }
+            
+            // 绘制图表
+            drawChart(categories);
+            
+            // 显示结果区域
+            document.getElementById('results-section').style.display = 'block';
+            
+            // 滚动到结果区域
+            document.getElementById('results-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 绘制结果图表
+        function drawChart(categories) {
+            const ctx = document.getElementById('result-chart').getContext('2d');
+            
+            const categoryNames = Object.keys(categories);
+            const averages = categoryNames.map(cat => parseFloat(categories[cat].average));
+            
+            // 销毁现有图表（如果存在）
+            if (window.resultChart) {
+                window.resultChart.destroy();
+            }
+            
+            // 创建新图表
+            window.resultChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: categoryNames,
+                    datasets: [{
+                        label: '领导力实践得分',
+                        data: averages,
+                        backgroundColor: 'rgba(52, 152, 219, 0.2)',
+                        borderColor: 'rgba(52, 152, 219, 1)',
+                        pointBackgroundColor: 'rgba(52, 152, 219, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(52, 152, 219, 1)'
+                    }]
+                },
+                options: {
+                    elements: {
+                        line: {
+                            tension: 0.2
+                        }
+                    },
+                    scales: {
+                        r: {
+                            angleLines: {
+                                display: true
+                            },
+                            suggestedMin: 0,
+                            suggestedMax: 10
+                        }
+                    }
+                }
+            });
+        }
+
+        // 生成二维码
+        function generateQRCode() {
+            const url = window.location.href;
+            const qrcodeDiv = document.getElementById('qrcode');
+            
+            // 清空现有内容
+            qrcodeDiv.innerHTML = '';
+            
+            // 生成新二维码
+            new QRCode(qrcodeDiv, {
+                text: url,
+                width: 150,
+                height: 150,
+                colorDark: '#000000',
+                colorLight: '#ffffff',
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        }
+    </script>
+</body>
+</html>
